@@ -136,6 +136,7 @@ struct channel {
 struct conf {
 	char		*cf_ifname;
 	struct channel	cf_channels;
+	int		cf_autochan;
 	int		cf_hopfreq;
 	int		cf_deauthfreq;
 	unsigned char	*cf_bssid;
@@ -246,6 +247,7 @@ struct state {
 
 static void attack_continue(struct network *n);
 static void attack(struct network *n);
+static void autodetect_channels();
 
 void show_wep_stats(int UNUSED(B), int UNUSED(force),
 		    PTW_tableentry UNUSED(table[PTW_KEYHSBYTES][PTW_n]),
@@ -1609,7 +1611,7 @@ static void attack(struct network *n)
 	channel_set(n->n_chan);
 
 	time_printf(V_VERBOSE,
-		    "Pwning [%s] %s\n", n->n_ssid, mac2str(n->n_bssid));
+		    "Pwning [%s] %s on chan %d\n", n->n_ssid, mac2str(n->n_bssid), n->n_chan);
 
 	if (n->n_start.tv_sec == 0)
 		memcpy(&n->n_start, &_state.s_now, sizeof(n->n_start));
@@ -1838,6 +1840,10 @@ static void wifi_beacon(struct network *n, struct ieee80211_frame *wh,
 		case IEEE80211_ELEMID_RSN:
 			if (parse_rsn(n, p, l, 1) == -1)
 				goto __bad;
+			break;
+
+		case IEEE80211_ELEMID_HTINFO:
+			n->n_chan = *p;
 			break;
 
 		default:
@@ -2948,6 +2954,9 @@ static void pwn(void)
 	time_printf(V_VERBOSE, "mac %s\n", mac2str(_state.s_mac));
 	time_printf(V_NORMAL, "Let's ride\n");
 
+	if (_conf.cf_autochan)
+		autodetect_channels();
+
 	if (wi_set_channel(s->s_wi, _state.s_chan) == -1)
 		err(1, "wi_set_channel()");
 
@@ -3008,14 +3017,44 @@ static void channel_add(int num)
 	c->c_next = _conf.cf_channels.c_next;
 }
 
+static void autodetect_freq(int start, int end, int incr)
+{
+	int freq;
+	int chan;
+
+	for (freq = start; freq <= end; freq += incr)
+	{
+		if (wi_set_freq(_state.s_wi, freq) == 0)
+		{
+			chan = wi_get_channel(_state.s_wi);
+			channel_add(chan);
+			time_printf(V_VERBOSE, "Found channel %d on frequency %d\n", chan, freq);
+		}
+		else
+		{
+			time_printf(V_VERBOSE, "No channel found on frequency %d\n", freq);
+		}
+	}
+}
+static void autodetect_channels()
+{
+	time_printf(V_NORMAL, "Autodetecting supported channels...\n");
+
+	// autodetect 2ghz channels
+	autodetect_freq(2412, 2472, 5);	// 1-13
+	autodetect_freq(2484, 2484, 1); // 14
+
+	// autodetect 5ghz channels
+	autodetect_freq(5180, 5320, 10); // 36-64
+	autodetect_freq(5500, 5720, 10); // 100-144
+	autodetect_freq(5745, 5805, 10); // 149-161
+	autodetect_freq(5825, 5825, 1);  // 165
+}
+
 static void init_conf(void)
 {
-	int i;
-
 	_conf.cf_channels.c_next = &_conf.cf_channels;
-
-	for (i = 1; i <= 165; i++)
-		channel_add(i);
+	_conf.cf_autochan = 1;
 
 	_state.s_hopchan = _conf.cf_channels.c_next;
 
@@ -3026,9 +3065,9 @@ static void init_conf(void)
 	_conf.cf_to	    = 100;
 	_conf.cf_floodfreq  = 10 * 1000;
 	_conf.cf_crack_int  = 5000;
-	_conf.cf_wpa	    = "/tmp/wpa.cap";
-	_conf.cf_wep	    = "/tmp/wep.cap";
-	_conf.cf_log	    = "/tmp/besside.log";
+	_conf.cf_wpa	    = "wpa.cap";
+	_conf.cf_wep	    = "wep.cap";
+	_conf.cf_log	    = "besside.log";
 	_conf.cf_do_wep     = 1;
 	_conf.cf_do_wpa     = 1;
 }
