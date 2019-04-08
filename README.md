@@ -1,8 +1,8 @@
 # besside-ng_pineapple
 Part of the aircrack-ng (experimental version) for the WiFi Pineapples, with custom scripts.
 
-Besside-ng 1.2 rc2 - (C) 2017 Andreas Nilsen
-  Modified for WiFi Pineapple + 5GHz Support
+besside-ng 1.5.2 - (C) 2019 Andreas Nilsen
+  Modified for WiFi Pineapple + 5GHz Support (autochannel detection) + WEP only + custom IV num
   http://www.aircrack-ng.org  -  https://github.com/adde88
 
   Usage: ./besside-ng [options] <interface>
@@ -15,6 +15,7 @@ Besside-ng 1.2 rc2 - (C) 2017 Andreas Nilsen
        -c       <chan> : chanlock
        -p       <pps>  : flood rate
        -W              : WPA only
+       -w              : WEP only
        -v              : verbose, -vv for more, etc.
        -h              : This help screen
        -w              : WEP only
