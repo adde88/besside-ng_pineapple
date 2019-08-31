@@ -1,5 +1,6 @@
 # besside-ng_pineapple
-Part of the aircrack-ng (experimental version) for the WiFi Pineapples, with custom scripts.
+Part of the aircrack-ng (experimental version) for the WiFi Pineapples, with custom scripts.  
+For OpenWRT 19.07 (Pineapple firmware > 2.6)
 
 besside-ng 1.5.2 - (C) 2019 Andreas Nilsen
   Modified for WiFi Pineapple + 5GHz Support (autochannel detection) + WEP only + custom IV num
